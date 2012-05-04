@@ -57,6 +57,8 @@ class Converter(object):
 
             for table in tables:
                 self.writer.write_indexes(table)
+            
+            for table in tables:
                 self.writer.write_constraints(table)
 
             if self.verbose:
