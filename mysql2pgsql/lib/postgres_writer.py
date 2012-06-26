@@ -5,14 +5,22 @@ from cStringIO import StringIO
 from datetime import datetime, date, timedelta
 
 from psycopg2.extensions import QuotedString, Binary, AsIs
+from pytz import timezone
 
 
 class PostgresWriter(object):
     """Base class for :py:class:`mysql2pgsql.lib.postgres_file_writer.PostgresFileWriter`
     and :py:class:`mysql2pgsql.lib.postgres_db_writer.PostgresDbWriter`.
     """
-    def __init__(self):
+    def __init__(self, tz=False):
         self.column_types = {}
+
+        if tz:
+            self.tz = timezone('UTC')
+            self.tz_offset = '+00:00'
+        else:
+            self.tz = None
+            self.tz_offset = ''
 
     def column_description(self, column):
         return '"%s" %s' % (column['name'], self.column_type_info(column))
@@ -71,7 +79,10 @@ class PostgresWriter(object):
                 return default, 'double precision'
             elif column['type'] == 'datetime':
                 default = None
-                return default, 'timestamp without time zone'
+                if self.tz:
+                    return default, 'timestamp with time zone'
+                else:
+                    return default, 'timestamp without time zone'
             elif column['type'] == 'date':
                 default = None
                 return default, 'date'
@@ -79,13 +90,25 @@ class PostgresWriter(object):
                 if "CURRENT_TIMESTAMP" in column['default']:
                     default = ' DEFAULT CURRENT_TIMESTAMP'
                 if "0000-00-00 00:00" in  column['default']:
-                    default = " DEFAULT '1970-01-01 00:00'"
+                    if self.tz:
+                        default = " DEFAULT '1970-01-01T00:00:00.000000%s'" % self.tz_offset
+                    else:
+                        default = " DEFAULT '1970-01-01 00:00'"
                 if "0000-00-00 00:00:00" in column['default']:
-                    default = " DEFAULT '1970-01-01 00:00:00'"
-                return default, 'timestamp without time zone'
+                    if self.tz:
+                        default = " DEFAULT '1970-01-01T00:00:00.000000%s'" % self.tz_offset
+                    else:
+                        default = " DEFAULT '1970-01-01 00:00:00'"
+                if self.tz:
+                    return default, 'timestamp with time zone'
+                else:
+                    return default, 'timestamp without time zone'
             elif column['type'] == 'time':
                 default = " DEFAULT NOW()" if t(default) else None
-                return default, 'time without time zone'
+                if self.tz:
+                    return default, 'time with time zone'
+                else:
+                    return default, 'time without time zone'
             elif 'blob' in column['type'] or 'binary' in column['type']:
                 return default, 'bytea'
             elif column['type'] in ('tinytext', 'mediumtext', 'longtext', 'text'):
@@ -118,7 +141,10 @@ class PostgresWriter(object):
             if row[index] == None and ('timestamp' not in column_type or not column['default']):
                 row[index] = '\N'
             elif row[index] == None and column['default']:
-                row[index] = '1970-01-01 00:00:00'
+                if self.tz:
+                    row[index] = '1970-01-01T00:00:00.000000' + self.tz_offset
+                else:
+                    row[index] = '1970-01-01 00:00:00'
             elif 'bit' in column_type:
                 row[index] = bin(ord(row[index]))[2:]
             elif isinstance(row[index], (str, unicode, basestring)):
@@ -131,8 +157,18 @@ class PostgresWriter(object):
             elif column_type == 'boolean':
                 # We got here because you used a tinyint(1), if you didn't want a bool, don't use that type
                 row[index] = 't' if row[index] not in (None, 0) else 'f' if row[index] == 0 else row[index]
-            elif isinstance(row[index], (date, datetime)):
-                row[index] = row[index].isoformat()
+            elif  isinstance(row[index], (date, datetime)):
+                if  isinstance(row[index], datetime) and self.tz:
+                    try:
+                        if row[index].tzinfo:
+                            row[index] = row[index].astimezone(self.tz).isoformat()
+                        else:
+                            row[index] = datetime(*row[index].timetuple()[:6], tzinfo=self.tz).isoformat()
+                    except Exception as e:
+                        print e.message
+                    # row[index] = row[index].isoformat()
+                else:
+                    row[index] = row[index].isoformat()
             elif isinstance(row[index], timedelta):
                 row[index] = datetime.utcfromtimestamp(row[index].total_seconds()).time().isoformat()
             else:
@@ -194,8 +230,8 @@ class PostgresWriter(object):
         if primary_index:
             index_sql.append('ALTER TABLE "%(table_name)s" ADD CONSTRAINT "%(index_name)s_pkey" PRIMARY KEY(%(column_names)s);' % {
                     'table_name': table.name,
-                    'index_name': '%s_%s' % (table.name, '_'.join(re.sub('[\W]+', '', c) for c in primary_index[0]['columns'])),
-                    'column_names': ', '.join('%s' % col for col in primary_index[0]['columns']),
+                    'index_name': '%s_%s' % (table.name, '_'.join(primary_index[0]['columns'])),
+                    'column_names': ', '.join('"%s"' % col for col in primary_index[0]['columns']),
                     })
         for index in table.indexes:
             if 'primary' in index:

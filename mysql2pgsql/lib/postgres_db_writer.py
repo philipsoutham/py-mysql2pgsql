@@ -82,6 +82,7 @@ class PostgresDbWriter(PostgresWriter):
             self.db_options['database'], self.schema = self.db_options['database'].split(':')
         else:
             self.schema = None
+
         self.open()
 
     def open(self):

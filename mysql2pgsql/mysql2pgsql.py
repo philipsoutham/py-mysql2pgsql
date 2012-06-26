@@ -24,9 +24,9 @@ class Mysql2Pgsql(object):
         reader = MysqlReader(self.file_options['mysql'])
 
         if self.file_options['destination']['file']:
-            writer = PostgresFileWriter(self._get_file(self.file_options['destination']['file']), self.run_options.verbose)
+            writer = PostgresFileWriter(self._get_file(self.file_options['destination']['file']), self.run_options.verbose, tz=self.file_options.get('timezone', False))
         else:
-            writer = PostgresDbWriter(self.file_options['destination']['postgres'], self.run_options.verbose)
+            writer = PostgresDbWriter(self.file_options['destination']['postgres'], self.run_options.verbose, tz=self.file_options.get('timezone', False))
 
         Converter(reader, writer, self.file_options, self.run_options.verbose).convert()
 
