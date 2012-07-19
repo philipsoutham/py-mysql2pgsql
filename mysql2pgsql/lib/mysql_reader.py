@@ -118,7 +118,13 @@ class MysqlReader(object):
 
         def _load_columns(self):
             fields = []
-            for res in self.reader.db.query('EXPLAIN `%s`' % self.name):
+            for row in self.reader.db.query('EXPLAIN `%s`' % self.name):
+                res = ()
+                for field in row:
+                  if type(field) == unicode:
+                    res += field.encode('utf8'),
+                  else:
+                    res += field,
                 length_match = re_column_length.search(res[1])
                 precision_match = re_column_precision.search(res[1])
                 length = length_match.group(1) if length_match else \
