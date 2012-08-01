@@ -115,6 +115,11 @@ SET client_min_messages = warning;
         f_write = self.f.write
         verbose = self.verbose
         # end variable optimiztions
+        
+        # this is so the \. char after copy from stdin
+        # does not end on a empty line.
+        first_row = True
+        first_char = ""
 
         f_write("""
 --
@@ -134,9 +139,14 @@ COPY "%(table_name)s" (%(column_names)s) FROM stdin;
             row = list(row)
             pr(table, row)
             try:
-                f_write(u'%s\n' % (u'\t'.join(row)))
+                f_write(u'%s%s' % (first_char, u'\t'.join(row)))
             except UnicodeDecodeError:
-                f_write(u'%s\n' % (u'\t'.join(r.decode('utf-8') for r in row)))
+                f_write(u'%s%s' % (first_char, u'\t'.join(r.decode('utf-8') for r in row)))
+                
+            if first_row:
+                first_row = False
+                first_char = "\n"
+                
             if verbose:
                 if (i % 20000) == 0:
                     now = tt()
