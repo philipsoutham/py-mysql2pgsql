@@ -139,6 +139,9 @@ to edit. For the impatient, here is what the file contains.
     # if force_truncate is true, forces a table truncate before table loading
     force_truncate: false
 
+    # if timezone is true, forces to append/convert to UTC tzinfo mysql data
+    timezone: false
+
 
 Pretty self explainitory right? A couple things to note, first if
 `destination -> file` is populated all outpute will be dumped to the
