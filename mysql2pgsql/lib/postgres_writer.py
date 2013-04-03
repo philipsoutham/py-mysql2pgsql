@@ -33,10 +33,6 @@ class PostgresWriter(object):
     def column_type_info(self, column):
         """
         """
-        if column.get('auto_increment', None):
-            return 'integer DEFAULT nextval(\'%s_%s_seq\'::regclass) NOT NULL' % (
-                   column['table_name'], column['name'])
-
         null = "" if column['null'] else " NOT NULL"
 
         def get_type(column):
@@ -128,6 +124,11 @@ class PostgresWriter(object):
                 raise Exception('unknown %s' % column['type'])
 
         default, column_type = get_type(column)
+
+        if column.get('auto_increment', None):
+            return '%s DEFAULT nextval(\'%s_%s_seq\'::regclass) NOT NULL' % (
+                   column_type, column['table_name'], column['name'])
+                    
         return '%s%s%s' % (column_type, (default if not default == None else ''), null)
 
     def process_row(self, table, row):

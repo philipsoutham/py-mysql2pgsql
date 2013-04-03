@@ -11,7 +11,7 @@ re_column_length = re.compile(r'\((\d+)\)')
 re_column_precision = re.compile(r'\((\d+),(\d+)\)')
 re_key_1 = re.compile(r'CONSTRAINT `(\w+)` FOREIGN KEY \(`(\w+)`\) REFERENCES `(\w+)` \(`(\w+)`\)')
 re_key_2 = re.compile(r'KEY `(\w+)` \((.*)\)')
-re_key_3 = re.compile(r'PRIMARY KEY \((.*)\)')
+re_key_3 = re.compile(r'PRIMARY KEY +\((.*)\)')
 
 
 class DB:
