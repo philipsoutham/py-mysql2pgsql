@@ -12,9 +12,9 @@ class PostgresWriter(object):
     """Base class for :py:class:`mysql2pgsql.lib.postgres_file_writer.PostgresFileWriter`
     and :py:class:`mysql2pgsql.lib.postgres_db_writer.PostgresDbWriter`.
     """
-    def __init__(self, tz=False):
+    def __init__(self, tz=False, index_prefix=None):
         self.column_types = {}
-
+        self.index_prefix = index_prefix or ''
         if tz:
             self.tz = timezone('UTC')
             self.tz_offset = '+00:00'
@@ -226,17 +226,19 @@ class PostgresWriter(object):
     def write_indexes(self, table):
         index_sql = []
         primary_index = [idx for idx in table.indexes if idx.get('primary', None)]
+        index_prefix = self.index_prefix
         if primary_index:
             index_sql.append('ALTER TABLE "%(table_name)s" ADD CONSTRAINT "%(index_name)s_pkey" PRIMARY KEY(%(column_names)s);' % {
                     'table_name': table.name,
-                    'index_name': '%s_%s' % (table.name, '_'.join(primary_index[0]['columns'])),
+                    'index_name': '%s%s_%s' % (index_prefix, table.name, 
+                                        '_'.join(primary_index[0]['columns'])),
                     'column_names': ', '.join('"%s"' % col for col in primary_index[0]['columns']),
                     })
         for index in table.indexes:
             if 'primary' in index:
                 continue
             unique = 'UNIQUE ' if index.get('unique', None) else ''
-            index_name = '%s_%s' % (table.name, '_'.join(index['columns']))
+            index_name = '%s%s_%s' % (index_prefix, table.name, '_'.join(index['columns']))
             index_sql.append('DROP INDEX IF EXISTS "%s" CASCADE;' % index_name)
             index_sql.append('CREATE %(unique)sINDEX "%(index_name)s" ON "%(table_name)s" (%(column_names)s);' % {
                     'unique': unique,

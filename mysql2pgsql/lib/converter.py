@@ -14,6 +14,7 @@ class Converter(object):
         self.supress_ddl = file_options.get('supress_ddl', None)
         self.supress_data = file_options.get('supress_data', None)
         self.force_truncate = file_options.get('force_truncate', None)
+        self.index_prefix = file_options.get('index_prefix', u"")
 
     def convert(self):
         if self.verbose:

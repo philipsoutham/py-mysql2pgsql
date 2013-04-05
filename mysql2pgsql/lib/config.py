@@ -77,4 +77,8 @@ force_truncate: false
 
 # if timezone is true, forces to append/convert to UTC tzinfo mysql data
 timezone: false
+
+# if index_prefix is given, indexes will be created whith a name prefixed with index_prefix
+index_prefix:
+
 """
