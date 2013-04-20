@@ -215,8 +215,8 @@ class PostgresWriter(object):
         table_sql = []
         if serial_key:
             serial_key_seq = '%s_%s_seq' % (table.name, serial_key)
-            serial_key_sql.append('DROP SEQUENCE IF EXISTS %s CASCADE;' % serial_key_seq)
-            serial_key_sql.append("""CREATE SEQUENCE %s INCREMENT BY 1
+            serial_key_sql.append('DROP SEQUENCE IF EXISTS "%s" CASCADE;' % serial_key_seq)
+            serial_key_sql.append("""CREATE SEQUENCE "%s" INCREMENT BY 1
                                   NO MAXVALUE NO MINVALUE CACHE 1;""" % serial_key_seq)
             serial_key_sql.append('SELECT pg_catalog.setval(%s, %s, true);' % (QuotedString(serial_key_seq).getquoted(), maxval))
 
