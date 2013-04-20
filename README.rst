@@ -162,6 +162,11 @@ want to drop before importing set `force_truncate` to
 `true`. `force_truncate` is not necessary when `supress_ddl` is set to
 `false`.
 
+Note that when migrating, it's sometimes possible to knock your 
+sequences out of whack. When this happens, you may get IntegrityErrors 
+about your primary keys saying things like, "duplicate key value violates 
+unique constraint." See `this page <https://wiki.postgresql.org/wiki/Fixing_Sequences>`_ for a fix
+
 One last thing, the `--verbose` flag. Without it the tool will just go
 on it's merry way without bothering you with any output until it's
 done. With it you'll get a play-by-play summary of what's going
