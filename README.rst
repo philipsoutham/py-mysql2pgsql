@@ -144,7 +144,7 @@ to edit. For the impatient, here is what the file contains.
 
 
 Pretty self explainitory right? A couple things to note, first if
-`destination -> file` is populated all outpute will be dumped to the
+`destination -> file` is populated all output will be dumped to the
 specified location regardless of what is contained in `destination ->
 postgres`. So if you want to dump directly to your server make sure
 the `file` value is blank.
