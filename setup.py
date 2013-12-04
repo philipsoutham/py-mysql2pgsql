@@ -1,4 +1,5 @@
 import os
+from sys import version_info as version
 from setuptools import setup
 
 install_requires = [
