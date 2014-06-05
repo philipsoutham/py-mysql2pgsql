@@ -21,14 +21,19 @@ class Mysql2Pgsql(object):
             raise e
 
     def convert(self):
-        reader = MysqlReader(self.file_options['mysql'])
+        reader_class = MysqlReader
+        reader_args = (self.file_options['mysql'],)
+        num_procs = 1
 
         if self.file_options['destination']['file']:
-            writer = PostgresFileWriter(self._get_file(self.file_options['destination']['file']), self.run_options.verbose, tz=self.file_options.get('timezone', False))
+            writer_class = PostgresFileWriter
+            writer_args = (self._get_file(self.file_options['destination']['file']), self.run_options.verbose, self.file_options.get('timezone', False))
         else:
-            writer = PostgresDbWriter(self.file_options['destination']['postgres'], self.run_options.verbose, tz=self.file_options.get('timezone', False))
+            writer_class = PostgresDbWriter
+            writer_args = (self.file_options['destination']['postgres'], self.run_options.verbose, self.file_options.get('timezone', False))
+            num_procs = self.file_options.get('num_procs', num_procs)
 
-        Converter(reader, writer, self.file_options, self.run_options.verbose).convert()
+        Converter(reader_class, reader_args, writer_class, writer_args, self.file_options, num_procs, self.run_options.verbose).convert()
 
     def _get_file(self, file_path):
         return codecs.open(file_path, 'wb', 'utf-8')

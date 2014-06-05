@@ -44,17 +44,17 @@ mysql:
  port: 3306
  socket: /tmp/mysql.sock
  username: mysql2psql
- password: 
+ password:
  database: mysql2psql_test
  compress: false
 destination:
  # if file is given, output goes to file, else postgres
- file: 
+ file:
  postgres:
   hostname: localhost
   port: 5432
   username: mysql2psql
-  password: 
+  password:
   database: mysql2psql_test
 
 # if tables is given, only the listed tables will be converted.  leave empty to convert all tables.
@@ -77,4 +77,7 @@ force_truncate: false
 
 # if timezone is true, forces to append/convert to UTC tzinfo mysql data
 timezone: false
+
+# number of processes to use when writing directly to postgresql.
+num_procs: 1
 """
