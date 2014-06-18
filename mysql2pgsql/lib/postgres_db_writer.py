@@ -103,6 +103,9 @@ class PostgresDbWriter(PostgresWriter):
 
     def execute(self, sql, args=(), many=False):
         with closing(self.conn.cursor()) as cur:
+            # avoid to execute empty sql
+            if not sql or sql.strip() == '':
+                return
             if many:
                 cur.executemany(sql, args)
             else:
@@ -203,4 +206,4 @@ class PostgresDbWriter(PostgresWriter):
         Returns None
         """
         f = self.FileObjFaker(table, reader.read(table), self.process_row, self.verbose)
-        self.copy_from(f, '"%s"' % table.name, ['"%s"' % c['name'] for c in table.columns])
+        self.copy_from(f, '"%s"' % table.name, ['%s' % self.quoted_name(c['name']) for c in table.columns])
