@@ -150,7 +150,7 @@ class PostgresWriter(object):
         return ''
 
     def table_comment(self, tablename, comment):
-        return (' COMMENT ON TABLE %s is %s;' % ( tablename, QuotedString(comment).getquoted()))
+        return (' COMMENT ON TABLE %s is %s;' % ( tablename, QuotedString(comment.encode('utf8')).getquoted()))
 
     def process_row(self, table, row):
         """Examines row data from MySQL and alters
