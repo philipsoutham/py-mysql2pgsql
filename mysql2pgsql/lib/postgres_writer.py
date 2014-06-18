@@ -12,10 +12,10 @@ class PostgresWriter(object):
     """Base class for :py:class:`mysql2pgsql.lib.postgres_file_writer.PostgresFileWriter`
     and :py:class:`mysql2pgsql.lib.postgres_db_writer.PostgresDbWriter`.
     """
-    def __init__(self, tz=False, index_prefix='', isColumnNameQuoted=False):
+    def __init__(self, tz=False, index_prefix='', isNameQuoted=False):
         self.column_types = {}
         self.index_prefix = index_prefix
-        self.isColumnNameQuoted = isColumnNameQuoted
+        self.isNameQuoted = isNameQuoted
         if tz:
             self.tz = timezone('UTC')
             self.tz_offset = '+00:00'
@@ -24,11 +24,13 @@ class PostgresWriter(object):
             self.tz_offset = ''
 
     def column_description(self, column):
-        quote_tag = '"'
-        if not self.isColumnNameQuoted:
-            quote_tag=''
-        return '%s%s%s %s' % (quote_tag, column['name'] , quote_tag, self.column_type_info(column))
+        return '%s %s' % (self.quoted_name(column['name']), self.column_type_info(column))
 
+    def quoted_name(self, value):
+        quote_tag = '"'
+        if not self.isNameQuoted:
+            quote_tag=''
+        return quote_tag + value + quote_tag
     def column_type(self, column):
         hash_key = hash(frozenset(column.items()))
         self.column_types[hash_key] = self.column_type_info(column).split(" ")[0]
@@ -145,12 +147,12 @@ class PostgresWriter(object):
 
     def column_comment(self, tablename, column):
       if not column['comment']: 
-        return (' COMMENT ON COLUMN %s.%s is %s;' % ( tablename, column['name'], QuotedString(column['comment'].encode('utf8')).getquoted()))
+        return (' COMMENT ON COLUMN %s.%s is %s;' % ( self.quoted_name(tablename), self.quoted_name(column['name']), QuotedString(column['comment'].encode('utf8')).getquoted()))
       else: 
         return ''
 
     def table_comment(self, tablename, comment):
-        return (' COMMENT ON TABLE %s is %s;' % ( tablename, QuotedString(comment.encode('utf8')).getquoted()))
+        return (' COMMENT ON TABLE %s is %s;' % ( self.quoted_name(tablename), QuotedString(comment.encode('utf8')).getquoted()))
 
     def process_row(self, table, row):
         """Examines row data from MySQL and alters
@@ -219,12 +221,12 @@ class PostgresWriter(object):
                 serial_key = column['name']
                 maxval = 1 if column['maxval'] < 1 else column['maxval'] + 1
 
-        truncate_sql = 'TRUNCATE "%s" CASCADE;' % table.name
+        truncate_sql = 'TRUNCATE %s CASCADE;' % self.quoted_name(table.name)
         serial_key_sql = None
 
         if serial_key:
             serial_key_sql = "SELECT pg_catalog.setval(pg_get_serial_sequence(%(table_name)s, %(serial_key)s), %(maxval)s, true);" % {
-                'table_name': QuotedString('"%s"' % table.name).getquoted(),
+                'table_name': QuotedString('%s' % self.quoted_name(table.name)).getquoted(),
                 'serial_key': QuotedString(serial_key).getquoted(),
                 'maxval': maxval}
 
@@ -241,8 +243,9 @@ class PostgresWriter(object):
                                   NO MAXVALUE NO MINVALUE CACHE 1;""" % serial_key_seq)
             serial_key_sql.append('SELECT pg_catalog.setval(\'"%s"\', %s, true);' % (serial_key_seq, maxval))
 
-        table_sql.append('DROP TABLE IF EXISTS "%s" CASCADE;' % table.name)
-        table_sql.append('CREATE TABLE "%s" (\n%s\n)\nWITHOUT OIDS;' % (table.name.encode('utf8'), columns))
+
+        table_sql.append('DROP TABLE IF EXISTS %s CASCADE;' % self.quoted_name(table.name))
+        table_sql.append('CREATE TABLE %s (\n%s\n)\nWITHOUT OIDS;' % (self.quoted_name(table.name.encode('utf8')), columns))
         table_sql.append( self.table_comments(table))
         return (table_sql, serial_key_sql)
 
@@ -251,11 +254,11 @@ class PostgresWriter(object):
         primary_index = [idx for idx in table.indexes if idx.get('primary', None)]
         index_prefix = self.index_prefix
         if primary_index:
-            index_sql.append('ALTER TABLE "%(table_name)s" ADD CONSTRAINT "%(index_name)s_pkey" PRIMARY KEY(%(column_names)s);' % {
-                    'table_name': table.name,
+            index_sql.append('ALTER TABLE %(table_name)s ADD CONSTRAINT "%(index_name)s_pkey" PRIMARY KEY(%(column_names)s);' % {
+                    'table_name': self.quoted_name(table.name),
                     'index_name': '%s%s_%s' % (index_prefix, table.name, 
                                         '_'.join(primary_index[0]['columns'])),
-                    'column_names': ', '.join('"%s"' % col for col in primary_index[0]['columns']),
+                    'column_names': ', '.join('%s' % self.quoted_name(col) for col in primary_index[0]['columns']),
                     })
         for index in table.indexes:
             if 'primary' in index:
@@ -263,11 +266,11 @@ class PostgresWriter(object):
             unique = 'UNIQUE ' if index.get('unique', None) else ''
             index_name = '%s%s_%s' % (index_prefix, table.name, '_'.join(index['columns']))
             index_sql.append('DROP INDEX IF EXISTS "%s" CASCADE;' % index_name)
-            index_sql.append('CREATE %(unique)sINDEX "%(index_name)s" ON "%(table_name)s" (%(column_names)s);' % {
+            index_sql.append('CREATE %(unique)sINDEX "%(index_name)s" ON %(table_name)s (%(column_names)s);' % {
                     'unique': unique,
                     'index_name': index_name,
-                    'table_name': table.name,
-                    'column_names': ', '.join('"%s"' % col for col in index['columns']),
+                    'table_name': self.quoted_name(table.name),
+                    'column_names': ', '.join('%s' % self.quoted_name(col) for col in index['columns']),
                     })
 
         return index_sql
@@ -275,12 +278,12 @@ class PostgresWriter(object):
     def write_constraints(self, table):
         constraint_sql = []
         for key in table.foreign_keys:
-            constraint_sql.append("""ALTER TABLE "%(table_name)s" ADD FOREIGN KEY ("%(column_name)s")
-            REFERENCES "%(ref_table_name)s"(%(ref_column_name)s);""" % {
-                'table_name': table.name,
-                'column_name': key['column'],
-                'ref_table_name': key['ref_table'],
-                'ref_column_name': key['ref_column']})
+            constraint_sql.append("""ALTER TABLE %(table_name)s ADD FOREIGN KEY (%(column_name)s)
+            REFERENCES %(ref_table_name)s(%(ref_column_name)s);""" % {
+                'table_name': self.quoted_name(table.name),
+                'column_name': self.quoted_name(key['column']),
+                'ref_table_name': self.quoted_name(key['ref_table']),
+                'ref_column_name': self.quoted_name(key['ref_column'])})
         return constraint_sql
 
     def write_triggers(self, table):

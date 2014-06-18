@@ -148,6 +148,9 @@ to edit. For the impatient, here is what the file contains.
     # if index_prefix is given, indexes will be created whith a name prefixed with index_prefix
     index_prefix:
 
+    # if name_quoted is true, all table_name and column_name will be double quoted
+    name_quoted: false
+
 Pretty self explainitory right? A couple things to note, first if
 `destination -> file` is populated all output will be dumped to the
 specified location regardless of what is contained in `destination ->

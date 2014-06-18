@@ -132,10 +132,10 @@ SET client_min_messages = warning;
 -- Data for Name: %(table_name)s; Type: TABLE DATA;
 --
 
-COPY "%(table_name)s" (%(column_names)s) FROM stdin;
+COPY %(table_name)s (%(column_names)s) FROM stdin;
 """ % {
-                'table_name': table.name,
-                'column_names': ', '.join(('"%s"' % col['name']) for col in table.columns)})
+                'table_name': self.quoted_name(table.name),
+                'column_names': ', '.join(('%s' % self.quoted_name(col['name'])) for col in table.columns)})
         if verbose:
             tt = time.time
             start_time = tt()

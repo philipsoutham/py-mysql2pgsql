@@ -36,3 +36,6 @@ supress_ddl: false
 
 # if force_truncate is true, forces a table truncate before table loading
 force_truncate: false
+
+# if name_quoted is true, all table_name and column_name will be double quoted
+name_quoted: false
