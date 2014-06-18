@@ -103,6 +103,9 @@ class PostgresDbWriter(PostgresWriter):
 
     def execute(self, sql, args=(), many=False):
         with closing(self.conn.cursor()) as cur:
+            # avoid to execute empty sql
+            if not sql or sql.strip() == '':
+                return
             if many:
                 cur.executemany(sql, args)
             else:
