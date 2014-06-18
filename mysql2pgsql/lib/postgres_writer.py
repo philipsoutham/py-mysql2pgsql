@@ -12,9 +12,10 @@ class PostgresWriter(object):
     """Base class for :py:class:`mysql2pgsql.lib.postgres_file_writer.PostgresFileWriter`
     and :py:class:`mysql2pgsql.lib.postgres_db_writer.PostgresDbWriter`.
     """
-    def __init__(self, tz=False, index_prefix=''):
+    def __init__(self, tz=False, index_prefix='', isColumnNameQuoted=False):
         self.column_types = {}
         self.index_prefix = index_prefix
+        self.isColumnNameQuoted = isColumnNameQuoted
         if tz:
             self.tz = timezone('UTC')
             self.tz_offset = '+00:00'
@@ -23,7 +24,10 @@ class PostgresWriter(object):
             self.tz_offset = ''
 
     def column_description(self, column):
-        return '"%s" %s' % (column['name'], self.column_type_info(column))
+        quote_tag = '"'
+        if not self.isColumnNameQuoted:
+            quote_tag=''
+        return '%s%s%s %s' % (quote_tag, column['name'] , quote_tag, self.column_type_info(column))
 
     def column_type(self, column):
         hash_key = hash(frozenset(column.items()))
@@ -141,7 +145,7 @@ class PostgresWriter(object):
 
     def column_comment(self, tablename, column):
       if not column['comment']: 
-        return (' COMMENT ON COLUMN %s.%s is %s;' % ( tablename, column['name'], QuotedString(column['comment']).getquoted()))
+        return (' COMMENT ON COLUMN %s.%s is %s;' % ( tablename, column['name'], QuotedString(column['comment'].encode('utf8')).getquoted()))
       else: 
         return ''
 
