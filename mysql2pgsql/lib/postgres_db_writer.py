@@ -102,12 +102,13 @@ class PostgresDbWriter(PostgresWriter):
             return cur.fetchone() if one else cur
 
     def execute(self, sql, args=(), many=False):
-        with closing(self.conn.cursor()) as cur:
-            if many:
-                cur.executemany(sql, args)
-            else:
-                cur.execute(sql, args)
-            self.conn.commit()
+        if sql.strip():
+            with closing(self.conn.cursor()) as cur:
+                if many:
+                    cur.executemany(sql, args)
+                else:
+                    cur.execute(sql, args)
+                self.conn.commit()
 
     def copy_from(self, file_obj, table_name, columns):
         with closing(self.conn.cursor()) as cur:
