@@ -59,7 +59,7 @@ class PostgresWriter(object):
                 default = (" DEFAULT %s" % (column['default'] if t(column['default']) else 'NULL')) if t(default) else None
                 return default, 'smallint'
             elif column['type'] == 'boolean':
-                default = (" DEFAULT %s" % ('true' if int(column['default']) == 1 else 'false')) if t(default) else None
+                default = (" DEFAULT %s" % ('true' if '1' in column['default'] else 'false')) if t(default) else None
                 return default, 'boolean'
             elif column['type'] == 'float':
                 default = (" DEFAULT %s" % (column['default'] if t(column['default']) else 'NULL')) if t(default) else None
@@ -166,7 +166,9 @@ class PostgresWriter(object):
             elif 'bit' in column_type:
                 row[index] = bin(ord(row[index]))[2:]
             elif isinstance(row[index], (str, unicode, basestring)):
-                if column_type == 'bytea':
+                if column_type == 'boolean':
+                    row[index] = 't' if row[index] == '\x01' else 'f' if row[index] == '\x00' or row[index] == '' else row[index]
+                elif column_type == 'bytea':
                     row[index] = Binary(row[index]).getquoted()[1:-8] if row[index] else row[index]
                 elif 'text[' in column_type:
                     row[index] = '{%s}' % ','.join('"%s"' % v.replace('"', r'\"') for v in row[index].split(','))
