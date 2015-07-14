@@ -195,7 +195,7 @@ class PostgresWriter(object):
             index_sql.append('ALTER TABLE "%(table_name)s" ADD CONSTRAINT "%(index_name)s_pkey" PRIMARY KEY(%(column_names)s);' % {
                     'table_name': table.name,
                     'index_name': '%s_%s' % (table.name, '_'.join(re.sub('[\W]+', '', c) for c in primary_index[0]['columns'])),
-                    'column_names': ', '.join('%s' % col for col in primary_index[0]['columns']),
+                    'column_names': ', '.join('"%s"' % col for col in primary_index[0]['columns']),
                     })
         for index in table.indexes:
             if 'primary' in index:
@@ -209,14 +209,13 @@ class PostgresWriter(object):
                     'table_name': table.name,
                     'column_names': ', '.join('"%s"' % col for col in index['columns']),
                     })
-
         return index_sql
 
     def write_constraints(self, table):
         constraint_sql = []
         for key in table.foreign_keys:
             constraint_sql.append("""ALTER TABLE "%(table_name)s" ADD FOREIGN KEY ("%(column_name)s")
-            REFERENCES "%(ref_table_name)s"(%(ref_column_name)s);""" % {
+            REFERENCES "%(ref_table_name)s"("%(ref_column_name)s");""" % {
                 'table_name': table.name,
                 'column_name': key['column'],
                 'ref_table_name': key['ref_table'],
