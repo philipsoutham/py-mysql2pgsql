@@ -9,7 +9,10 @@ into your running PostgreSQL server (8.2 or higher).
 .. attention::
    Currently there is no support for importing `spatial data from MySQL
    <http://dev.mysql.com/doc/refman/5.5/en/spatial-extensions.html>`_.
+Search Influence Updates:
+=============
 
+Added ability to migrate even if MYSQL database comments = ""
 
 Installation:
 =============
@@ -111,17 +114,17 @@ to edit. For the impatient, here is what the file contains.
      port: 3306
      socket: /tmp/mysql.sock
      username: mysql2psql
-     password: 
+     password:
      database: mysql2psql_test
      compress: false
     destination:
      # if file is given, output goes to file, else postgres
-     file: 
+     file:
      postgres:
       hostname: localhost
       port: 5432
       username: mysql2psql
-      password: 
+      password:
       database: mysql2psql_test
 
     # if only_tables is given, only the listed tables will be converted.  leave empty to convert all tables.
@@ -144,7 +147,7 @@ to edit. For the impatient, here is what the file contains.
 
     # if timezone is true, forces to append/convert to UTC tzinfo mysql data
     timezone: false
-    
+
     # if index_prefix is given, indexes will be created whith a name prefixed with index_prefix
     index_prefix:
 
@@ -157,7 +160,7 @@ the `file` value is blank.
 Say you have a MySQL db with many, many tables, but you're only
 interested in exporting a subset of those table, no problem. Add only
 the tables you want to include in `only_tables` or tables that you
-don't want exported to `exclude_tables`. 
+don't want exported to `exclude_tables`.
 
 Other items of interest may be to skip moving the data and just create
 the schema or vice versa. To skip the data and only create the schema
@@ -167,9 +170,9 @@ want to drop before importing set `force_truncate` to
 `true`. `force_truncate` is not necessary when `supress_ddl` is set to
 `false`.
 
-Note that when migrating, it's sometimes possible to knock your 
-sequences out of whack. When this happens, you may get IntegrityErrors 
-about your primary keys saying things like, "duplicate key value violates 
+Note that when migrating, it's sometimes possible to knock your
+sequences out of whack. When this happens, you may get IntegrityErrors
+about your primary keys saying things like, "duplicate key value violates
 unique constraint." See `this page <https://wiki.postgresql.org/wiki/Fixing_Sequences>`_ for a fix
 
 Due to different naming conventions in mysql an postgrsql, there is a chance
@@ -188,7 +191,7 @@ on. Here's an example.
       START  - CREATING TABLE table_one
       FINISH - CREATING TABLE table_one
       START  - WRITING DATA TO table_one
-      24812.02 rows/sec [20000]  
+      24812.02 rows/sec [20000]
       FINISH - WRITING DATA TO table_one
       START  - ADDING INDEXES TO table_one
       FINISH - ADDING INDEXES TO table_one

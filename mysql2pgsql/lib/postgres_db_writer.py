@@ -150,9 +150,11 @@ class PostgresDbWriter(PostgresWriter):
         Returns None
         """
         table_sql, serial_key_sql = super(PostgresDbWriter, self).write_table(table)
+        # for sql in serial_key_sql + table_sql:
+        #     self.execute(sql)
         for sql in serial_key_sql + table_sql:
-            self.execute(sql)
-
+            if sql != "":
+                self.execute(sql)
     @status_logger
     def write_indexes(self, table):
         """Send DDL to create the specified `table` indexes
