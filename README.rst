@@ -80,11 +80,13 @@ Looking for help?
     Tool for migrating/converting data from mysql to postgresql.
 
     optional arguments:
-      -h, --help            show this help message and exit
-      -v, --verbose         Show progress of data migration.
-      -f FILE, --file FILE  Location of configuration file (default:
-                            mysql2pgsql.yml). If none exists at that path,
-                            one will be created for you.
+      -h, --help                 Show this help message and exit
+      -v, --verbose              Show progress of data migration.
+      -f FILE, --file FILE       Location of configuration file (default:
+                                   mysql2pgsql.yml). If none exists at that path,
+                                   one will be created for you.
+      -s, --signle-transaction   Make data migration in signle transaction
+                                   (default: False)
 
 
 Don't worry if this is your first time, it'll be gentle.
@@ -171,6 +173,11 @@ Note that when migrating, it's sometimes possible to knock your
 sequences out of whack. When this happens, you may get IntegrityErrors 
 about your primary keys saying things like, "duplicate key value violates 
 unique constraint." See `this page <https://wiki.postgresql.org/wiki/Fixing_Sequences>`_ for a fix
+
+In some cases, you may get:   IngegrityError: insert or update on table 
+'refs_table' violates freign key constraint 'id_refs_main_table_id'. 
+DETAIL: Key (id)=123 is not present in table 'main_table'.
+In this case, `--single-transaction` key may help.
 
 Due to different naming conventions in mysql an postgrsql, there is a chance
 that the tool generates index names that collide with table names. This can

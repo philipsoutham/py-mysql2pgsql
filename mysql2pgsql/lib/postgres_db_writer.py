@@ -28,11 +28,12 @@ class PostgresDbWriter(PostgresWriter):
           - `processor`:
           - `verbose`: whether or not to log progress to :py:obj:`stdout`
         """
-        def __init__(self, table, data, processor, verbose=False):
+        def __init__(self, table, data, processor, verbose=False, single_transaction=False):
             self.data = iter(data)
             self.table = table
             self.processor = processor
             self.verbose = verbose
+            self.single_transaction = single_transaction
 
             if verbose:
                 self.idx = 1
@@ -68,9 +69,10 @@ class PostgresDbWriter(PostgresWriter):
         def read(self, *args, **kwargs):
             return self.readline(*args, **kwargs)
 
-    def __init__(self, db_options, verbose=False, *args, **kwargs):
+    def __init__(self, db_options, verbose=False, single_transaction=False, *args, **kwargs):
         super(PostgresDbWriter, self).__init__(*args, **kwargs)
         self.verbose = verbose
+        self.single_transaction = single_transaction
         self.db_options = {
             'host': str(db_options['hostname']),
             'port': db_options.get('port', 5432),
@@ -107,7 +109,8 @@ class PostgresDbWriter(PostgresWriter):
                 cur.executemany(sql, args)
             else:
                 cur.execute(sql, args)
-            self.conn.commit()
+            if not self.single_transaction:
+                self.conn.commit()
 
     def copy_from(self, file_obj, table_name, columns):
         with closing(self.conn.cursor()) as cur:
@@ -116,10 +119,13 @@ class PostgresDbWriter(PostgresWriter):
                           columns=columns
                           )
 
-        self.conn.commit()
+        if not self.single_transaction:
+            self.conn.commit()
 
     def close(self):
         """Closes connection to the PostgreSQL server"""
+        if self.single_transaction:
+            self.conn.commit()
         self.conn.close()
 
     def exists(self, relname):

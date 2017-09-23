@@ -23,6 +23,12 @@ if __name__ == '__main__':
         help='Location of configuration file (default: %(default)s). If none exists at that path, one will be created for you.',
         )
     parser.add_argument(
+        '-s', '--single-transaction',
+        default=False,
+        action='store_true',
+        help='Make data migration in signle transaction (default: False)',
+        )
+    parser.add_argument(
         '-V', '--version',
         action='store_true',
         help='Print version and exit.'

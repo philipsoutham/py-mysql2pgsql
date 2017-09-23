@@ -25,12 +25,13 @@ class Mysql2Pgsql(object):
 
         if self.file_options['destination']['file']:
             writer = PostgresFileWriter(self._get_file(self.file_options['destination']['file']), 
-                                        self.run_options.verbose, 
+                                        self.run_options.verbose,
                                         tz=self.file_options.get('timezone', False),
                                         index_prefix=self.file_options.get("index_prefix", ''))
         else:
             writer = PostgresDbWriter(self.file_options['destination']['postgres'], 
-                                      self.run_options.verbose, 
+                                      self.run_options.verbose,
+                                      self.run_options.single_transaction,
                                       tz=self.file_options.get('timezone', False),
                                       index_prefix=self.file_options.get("index_prefix", ''))
 
