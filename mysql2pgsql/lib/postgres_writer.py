@@ -105,7 +105,7 @@ class PostgresWriter(object):
                     return default, 'time with time zone'
                 else:
                     return default, 'time without time zone'
-            elif column['type'] in ('blob', 'binary', 'longblob', 'mediumblob', 'tinyblob', 'varbinary'):
+            elif column['type'] in ('blob', 'binary', 'longblob', 'mediumblob', 'tinyblob') or column['type'].startswith('varbinary'):
                 return default, 'bytea'
             elif column['type'].startswith('binary(') or column['type'].startswith('varbinary('):
                 return default, 'bytea'
