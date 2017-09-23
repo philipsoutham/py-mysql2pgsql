@@ -130,21 +130,21 @@ class PostgresWriter(object):
         if column.get('auto_increment', None):
             return '%s DEFAULT nextval(\'"%s_%s_seq"\'::regclass) NOT NULL' % (
                    column_type, column['table_name'], column['name'])
-                    
+
         return '%s%s%s' % (column_type, (default if not default == None else ''), null)
 
     def table_comments(self, table):
         comments = StringIO()
-        if table.comment: 
+        if table.comment:
           comments.write(self.table_comment(table.name, table.comment))
         for column in table.columns:
           comments.write(self.column_comment(table.name, column))
-        return comments.getvalue() 
+        return comments.getvalue()
 
     def column_comment(self, tablename, column):
-      if column['comment']: 
+      if column['comment']:
         return (' COMMENT ON COLUMN %s.%s is %s;' % ( tablename, column['name'], QuotedString(column['comment']).getquoted()))
-      else: 
+      else:
         return ''
 
     def table_comment(self, tablename, comment):
@@ -251,7 +251,7 @@ class PostgresWriter(object):
         if primary_index:
             index_sql.append('ALTER TABLE "%(table_name)s" ADD CONSTRAINT "%(index_name)s_pkey" PRIMARY KEY(%(column_names)s);' % {
                     'table_name': table.name,
-                    'index_name': '%s%s_%s' % (index_prefix, table.name, 
+                    'index_name': '%s%s_%s' % (index_prefix, table.name,
                                         '_'.join(primary_index[0]['columns'])),
                     'column_names': ', '.join('"%s"' % col for col in primary_index[0]['columns']),
                     })
@@ -274,7 +274,7 @@ class PostgresWriter(object):
         constraint_sql = []
         for key in table.foreign_keys:
             constraint_sql.append("""ALTER TABLE "%(table_name)s" ADD FOREIGN KEY ("%(column_name)s")
-            REFERENCES "%(ref_table_name)s"(%(ref_column_name)s);""" % {
+            REFERENCES "%(ref_table_name)s"("%(ref_column_name)s");""" % {
                 'table_name': table.name,
                 'column_name': key['column'],
                 'ref_table_name': key['ref_table'],
