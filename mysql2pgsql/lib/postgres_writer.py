@@ -30,7 +30,7 @@ class PostgresWriter(object):
         self.column_types[hash_key] = self.column_type_info(column).split(" ")[0]
         return self.column_types[hash_key]
 
-    def column_type_info(self, column):
+    def column_type_info(self, column, return_tuple=False):
         """
         """
         null = "" if column['null'] else " NOT NULL"
@@ -128,9 +128,13 @@ class PostgresWriter(object):
         default, column_type = get_type(column)
 
         if column.get('auto_increment', None):
-            return '%s DEFAULT nextval(\'"%s_%s_seq"\'::regclass) NOT NULL' % (
-                   column_type, column['table_name'], column['name'])
-                    
+            if return_tuple:
+                return (column_type, (default if not default == None else ''), null)
+            else:
+                return '%s DEFAULT nextval(\'"%s_%s_seq"\'::regclass) NOT NULL' % (
+                       column_type, column['table_name'], column['name'])
+        if return_tuple:
+            return (column_type, (default if not default == None else ''), null)
         return '%s%s%s' % (column_type, (default if not default == None else ''), null)
 
     def table_comments(self, table):
