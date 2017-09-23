@@ -7,7 +7,6 @@ from datetime import datetime, date, timedelta
 from psycopg2.extensions import QuotedString, Binary, AsIs
 from pytz import timezone
 
-
 class PostgresWriter(object):
     """Base class for :py:class:`mysql2pgsql.lib.postgres_file_writer.PostgresFileWriter`
     and :py:class:`mysql2pgsql.lib.postgres_db_writer.PostgresDbWriter`.
@@ -167,6 +166,9 @@ class PostgresWriter(object):
                     row[index] = '1970-01-01 00:00:00'
             elif 'bit' in column_type:
                 row[index] = bin(ord(row[index]))[2:]
+            elif column_type == 'boolean':
+                # We got here because you used a tinyint(1), if you didn't want a bool, don't use that type
+                row[index] = 't' if row[index] not in (None, 0) else 'f' if row[index] == 0 else row[index]
             elif isinstance(row[index], (str, unicode, basestring)):
                 if column_type == 'bytea':
                     row[index] = Binary(row[index]).getquoted()[1:-8] if row[index] else row[index]
@@ -174,9 +176,6 @@ class PostgresWriter(object):
                     row[index] = '{%s}' % ','.join('"%s"' % v.replace('"', r'\"') for v in row[index].split(','))
                 else:
                     row[index] = row[index].replace('\\', r'\\').replace('\n', r'\n').replace('\t', r'\t').replace('\r', r'\r').replace('\0', '')
-            elif column_type == 'boolean':
-                # We got here because you used a tinyint(1), if you didn't want a bool, don't use that type
-                row[index] = 't' if row[index] not in (None, 0) else 'f' if row[index] == 0 else row[index]
             elif  isinstance(row[index], (date, datetime)):
                 if  isinstance(row[index], datetime) and self.tz:
                     try:
