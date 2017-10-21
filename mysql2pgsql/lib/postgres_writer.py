@@ -246,6 +246,10 @@ class PostgresWriter(object):
         primary_index = [idx for idx in table.indexes if idx.get('primary', None)]
         index_prefix = self.index_prefix
         if primary_index:
+            index_sql.append('ALTER TABLE "%(table_name)s" DROP CONSTRAINT IF EXISTS "%(index_name)s_pkey";' % {
+                    'table_name': table.name,
+                    'index_name': '%s_%s' % (table.name, '_'.join(primary_index[0]['columns']))
+                    })
             index_sql.append('ALTER TABLE "%(table_name)s" ADD CONSTRAINT "%(index_name)s_pkey" PRIMARY KEY(%(column_names)s);' % {
                 'table_name': table.name,
                 'index_name': '%s%s_%s' % (index_prefix, table.name,

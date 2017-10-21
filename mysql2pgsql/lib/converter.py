@@ -11,7 +11,8 @@ class Converter(object):
         self.file_options = file_options
         self.exclude_tables = file_options.get('exclude_tables', [])
         self.only_tables = file_options.get('only_tables', [])
-        self.supress_ddl = file_options.get('supress_ddl', None)
+        self.supress_schema = file_options.get('supress_schema', None)
+        self.supress_indexes = file_options.get('supress_indexes', None)
         self.supress_data = file_options.get('supress_data', None)
         self.force_truncate = file_options.get('force_truncate', None)
         self.index_prefix = file_options.get('index_prefix', u"")
@@ -24,7 +25,7 @@ class Converter(object):
         if self.only_tables:
             tables.sort(key=lambda t: self.only_tables.index(t.name))
         
-        if not self.supress_ddl:
+        if not self.supress_schema:
             if self.verbose:
                 print_start_table('START CREATING TABLES')
 
@@ -34,7 +35,7 @@ class Converter(object):
             if self.verbose:
                 print_start_table('DONE CREATING TABLES')
 
-        if self.force_truncate and self.supress_ddl:
+        if self.force_truncate and self.supress_schema:
             if self.verbose:
                 print_start_table('START TRUNCATING TABLES')
 
@@ -54,7 +55,7 @@ class Converter(object):
             if self.verbose:
                 print_start_table('DONE WRITING TABLE DATA')
 
-        if not self.supress_ddl:
+        if not self.supress_indexes:
             if self.verbose:
                 print_start_table('START CREATING INDEXES, CONSTRAINTS, AND TRIGGERS')
 

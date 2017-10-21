@@ -72,8 +72,11 @@ destination:
 # if supress_data is true, only the schema definition will be exported/migrated, and not the data
 supress_data: false
 
-# if supress_ddl is true, only the data will be exported/imported, and not the schema
-supress_ddl: false
+# if supress_schema is true, table creation will be skipped
+supress_schema: false
+
+# if supress_indexes is true, index and constraint creation will be skipped
+supress_indexes: false
 
 # if force_truncate is true, forces a table truncate before table loading
 force_truncate: false
