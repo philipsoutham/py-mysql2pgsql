@@ -79,7 +79,7 @@ SET client_min_messages = warning;
     })
 
     @status_logger
-    def write_indexes(self, table):
+    def write_indexes(self, table, unique_flag):
         """Write DDL of `table` indexes to the output file
 
         :Parameters:
@@ -87,7 +87,7 @@ SET client_min_messages = warning;
 
         Returns None
         """
-        self.f.write('\n'.join(super(PostgresFileWriter, self).write_indexes(table)))
+        self.f.write('\n'.join(super(PostgresFileWriter, self).write_indexes(table, unique_flag)))
 
     @status_logger
     def write_constraints(self, table):

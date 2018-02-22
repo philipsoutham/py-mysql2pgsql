@@ -15,6 +15,7 @@ class Converter(object):
         self.supress_data = file_options.get('supress_data', None)
         self.force_truncate = file_options.get('force_truncate', None)
         self.index_prefix = file_options.get('index_prefix', u"")
+        self.index_unique = file_options.get('index_unique', None)
 
     def convert(self):
         if self.verbose:
@@ -59,7 +60,7 @@ class Converter(object):
                 print_start_table('START CREATING INDEXES, CONSTRAINTS, AND TRIGGERS')
 
             for table in tables:
-                self.writer.write_indexes(table)
+                self.writer.write_indexes(table, self.index_unique)
 
             for table in tables:
                 self.writer.write_constraints(table)

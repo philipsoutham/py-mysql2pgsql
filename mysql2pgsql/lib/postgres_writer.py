@@ -205,6 +205,13 @@ class PostgresWriter(object):
             columns.write('  %s,\n' % self.column_description(column))
         return primary_keys, serial_key, maxval, columns.getvalue()[:-2]
 
+    def all_columns(self, table):
+        column_names = []
+
+        for column in table.columns:
+            column_names.append(column['name'])
+        return column_names
+
     def truncate(self, table):
         serial_key = None
         maxval = None
@@ -247,7 +254,7 @@ class PostgresWriter(object):
         """
         return (table_sql, serial_key_sql)
 
-    def write_indexes(self, table):
+    def write_indexes(self, table, unique_flag):
         index_sql = []
         primary_index = [idx for idx in table.indexes if idx.get('primary', None)]
         index_prefix = self.index_prefix
@@ -258,18 +265,23 @@ class PostgresWriter(object):
                                            '_'.join(primary_index[0]['columns'])),
                 'column_names': ', '.join('"%s"' % col for col in primary_index[0]['columns']),
             })
-        for index in table.indexes:
-            if 'primary' in index:
-                continue
-            unique = 'UNIQUE ' if index.get('unique', None) else ''
-            index_name = '%s%s_%s' % (index_prefix, table.name, '_'.join(index['columns']))
-            index_sql.append('DROP INDEX IF EXISTS "%s" CASCADE;' % index_name)
-            index_sql.append('CREATE %(unique)sINDEX "%(index_name)s" ON "%(table_name)s" (%(column_names)s);' % {
-                'unique': unique,
-                'index_name': index_name,
-                'table_name': table.name,
-                'column_names': ', '.join('"%s"' % col for col in index['columns']),
-            })
+        ''' For UNIQUE index: psycopg2.ProgrammingError: UNIQUE index must contain all columns in the distribution key
+            if index_unique: true, replace index['columns'] with self.all_columns(table)
+            else do nothing and ignore the UNIQUE index
+            '''
+        if unique_flag:
+            for index in table.indexes:
+                if 'primary' in index:
+                    continue
+                unique = 'UNIQUE ' if index.get('unique', None) else ''
+                index_name = '%s%s_%s' % (index_prefix, table.name, '_'.join(index['columns']))
+                index_sql.append('DROP INDEX IF EXISTS "%s" CASCADE;' % index_name)
+                index_sql.append('CREATE %(unique)sINDEX "%(index_name)s" ON "%(table_name)s" (%(column_names)s);' % {
+                    'unique': unique,
+                    'index_name': index_name,
+                    'table_name': table.name,
+                    'column_names': ', '.join('"%s"' % col for col in self.all_columns(table)),
+                })
 
         return index_sql
 

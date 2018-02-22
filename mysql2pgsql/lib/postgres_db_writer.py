@@ -154,7 +154,7 @@ class PostgresDbWriter(PostgresWriter):
             self.execute(sql)
 
     @status_logger
-    def write_indexes(self, table):
+    def write_indexes(self, table, unique_flag):
         """Send DDL to create the specified `table` indexes
 
         :Parameters:
@@ -162,7 +162,7 @@ class PostgresDbWriter(PostgresWriter):
 
         Returns None
         """
-        index_sql = super(PostgresDbWriter, self).write_indexes(table)
+        index_sql = super(PostgresDbWriter, self).write_indexes(table, unique_flag)
         for sql in index_sql:
             self.execute(sql)
 

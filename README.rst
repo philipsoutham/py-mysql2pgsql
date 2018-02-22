@@ -105,6 +105,7 @@ to edit. For the impatient, here is what the file contains.
     # also 'localhost' is a special 'hostname' for MySQL that overrides the 'port' option
     # and forces it to use a local socket connection
     # if tcp is chosen, you can use compression
+    # if use a schema, use colon like this 'mydatabase:schema'
 
     mysql:
      hostname: localhost
@@ -147,6 +148,9 @@ to edit. For the impatient, here is what the file contains.
     
     # if index_prefix is given, indexes will be created whith a name prefixed with index_prefix
     index_prefix:
+
+    # if index_unique is true CREATE UNIQUE index use all columns of table, else ignore the UNIQUE index
+    index_unique: false
 
 Pretty self explainitory right? A couple things to note, first if
 `destination -> file` is populated all output will be dumped to the
