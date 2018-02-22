@@ -238,7 +238,13 @@ class PostgresWriter(object):
 
         table_sql.append('DROP TABLE IF EXISTS "%s" CASCADE;' % table.name)
         table_sql.append('CREATE TABLE "%s" (\n%s\n)\nWITHOUT OIDS;' % (table.name.encode('utf8'), columns))
+        """
+        [ERROR: 
+            postgres_writer.py", line 143, in table_comments 
+            UnicodeEncodeError: 'latin-1' codec can't encode characters in position 0-4: ordinal not in range(256)
+        ]
         table_sql.extend(self.table_comments(table))
+        """
         return (table_sql, serial_key_sql)
 
     def write_indexes(self, table):
