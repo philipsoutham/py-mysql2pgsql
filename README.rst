@@ -105,6 +105,7 @@ to edit. For the impatient, here is what the file contains.
     # also 'localhost' is a special 'hostname' for MySQL that overrides the 'port' option
     # and forces it to use a local socket connection
     # if tcp is chosen, you can use compression
+    # if use a schema, use colon like this 'mydatabase:schema', else will import to schema 'public'
 
     mysql:
      hostname: localhost
