@@ -50,6 +50,9 @@ class PostgresWriter(object):
             elif column['type'] == 'varchar':
                 default = ('%s::character varying' % default) if t(default) else None
                 return default, 'character varying(%s)' % column['length']
+            elif column['type'] == 'json':
+                 default = None
+                 return default, 'json'
             elif column['type'] == 'integer':
                 default = (" DEFAULT %s" % (column['default'] if t(column['default']) else 'NULL')) if t(default) else None
                 return default, 'integer'
@@ -140,10 +143,16 @@ class PostgresWriter(object):
     def table_comments(self, table):
         comments = []
         if table.comment:
-            comments.append('COMMENT ON TABLE %s is %s;' % (table.name, QuotedString(table.comment).getquoted()))
+            table_comment = table.comment.encode('utf8')
+            table_comment_res = QuotedString(table_comment).getquoted()
+            comments.append('COMMENT ON TABLE {} is {};'.format(table.name, table_comment_res))
         for column in table.columns:
             if column['comment']:
-                comments.append('COMMENT ON COLUMN %s.%s is %s;' % (table.name, column['name'], QuotedString(column['comment']).getquoted()))
+                print column['comment'],type(column['comment'])
+                comment_name = column['comment']
+                comment = QuotedString(comment_name).getquoted()
+                print 'COMMENT ON TABLE {} is {};'.format(comment, comment_name)
+                comments.append('COMMENT ON COLUMN {}.{} is {};'.format(table.name, column['name'], QuotedString(column['comment']).getquoted()))
         return comments
 
     def process_row(self, table, row):
