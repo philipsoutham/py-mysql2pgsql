@@ -3,8 +3,7 @@ from __future__ import with_statement, absolute_import
 import re
 from contextlib import closing
 
-import MySQLdb
-import MySQLdb.cursors
+import pymysql
 
 
 re_column_length = re.compile(r'\((\d+)\)')
@@ -44,15 +43,16 @@ class DB:
         self.options = args
 
     def connect(self):
-        self.conn = MySQLdb.connect(**self.options)
+        self.conn = pymysql.connect(**self.options)
+        self.conn.set_charset('utf8')
 
     def close(self):
         self.conn.close()
 
-    def cursor(self, cursorclass=MySQLdb.cursors.Cursor):
+    def cursor(self, cursorclass=pymysql.cursors.Cursor):
         try:
             return self.conn.cursor(cursorclass)
-        except (AttributeError, MySQLdb.OperationalError):
+        except (AttributeError, pymysql.OperationalError):
             self.connect()
             return self.conn.cursor(cursorclass)
 
@@ -69,7 +69,7 @@ class DB:
             return cur.fetchone()
 
     def query_many(self, sql, args, large):
-        with closing(self.cursor(MySQLdb.cursors.SSCursor if large else MySQLdb.cursors.Cursor)) as cur:
+        with closing(self.cursor(pymysql.cursors.SSCursor if large else pymysql.cursors.Cursor)) as cur:
             cur.execute(sql, args)
             for row in cur:
                 yield row
@@ -190,7 +190,7 @@ class MysqlReader(object):
         def query_for(self):
             return 'SELECT %(column_names)s FROM `%(table_name)s`' % {
                 'table_name': self.name,
-                'column_names': ', '. join(("`%s`" % c['name']) for c in self.columns)}
+                'column_names': ', '. join(('`%s`' % c['name']) for c in self.columns)}
 
     def __init__(self, options):
         self.db = DB(options)

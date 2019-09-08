@@ -1,11 +1,8 @@
 from __future__ import with_statement
-import sys
+
 import os
+import sys
 import unittest
-
-from contextlib import closing
-
-import MySQLdb
 
 sys.path.append(os.path.abspath('../'))
 
@@ -13,22 +10,23 @@ from mysql2pgsql.lib.config import Config
 from mysql2pgsql.lib.mysql_reader import MysqlReader
 from mysql2pgsql.lib.errors import ConfigurationFileNotFound
 
+
 class TestMysqlReader(unittest.TestCase):
     def setUp(self):
         try:
             self.config_file = os.path.join(os.path.dirname(__file__), 'mysql2pgsql-test.yml')
             config = Config(self.config_file, False)
         except ConfigurationFileNotFound:
-            print("In order to run this test you must create the file %s" % config)
+            print(("In order to run this test you must create the file %s" % config))
             sys.exit(-1)
         self.options = config.options['mysql']
 
-        self.args = {            
+        self.args = {
             'user': self.options.get('username', 'root'),
             'db': self.options['database'],
             'use_unicode': True,
             'charset': 'utf8',
-            }
+        }
 
         if self.options.get('password', None):
             self.args['passwd'] = self.options.get('password', None)
@@ -76,7 +74,7 @@ class TestMysqlReader(unittest.TestCase):
             'time': (119, 120, 121, 122, 123, 124),
             'tinyblob': (25, 26),
             'longblob': (31, 32)
-            }
+        }
 
     def tearDown(self):
         self.reader.close()
@@ -87,7 +85,7 @@ class TestMysqlReader(unittest.TestCase):
                     cur.execute(cmd)
                 conn.commit()
 '''
-        
+
     def test_tables(self):
         table_list = list(self.reader.tables)
         assert table_list
@@ -97,10 +95,8 @@ class TestMysqlReader(unittest.TestCase):
         for table in self.reader.tables:
             columns = table.columns
             if table.name == 'type_conversion_test_1':
-                for k, v in self.type_to_pos.iteritems():
+                for k, v in self.type_to_pos.items():
                     assert all(columns[i]['type'] == k for i in v)
-
-            
 
     def test_indexes(self):
         for table in self.reader.tables:
@@ -108,4 +104,3 @@ class TestMysqlReader(unittest.TestCase):
 
     def test_constraints(self):
         assert list(self.reader.tables)[1].foreign_keys
-

@@ -6,17 +6,17 @@ mysql:
  port: 3306
  socket:
  username: root
- password: 
+ password:
  database: mysql2pgsql
  compress: false
 destination:
  # if file is given, output goes to file, else postgres
- file: 
+ file:
  postgres:
   hostname: 127.0.0.1
   port: 5432
   username: postgres
-  password: 
+  password:
   database: mysql2pgsql
 
 # if tables is given, only the listed tables will be converted.  leave empty to convert all tables.
@@ -36,3 +36,9 @@ supress_ddl: false
 
 # if force_truncate is true, forces a table truncate before table loading
 force_truncate: false
+
+# Separator for each line of data. If your data contains a special number symbol, it makes sense to modify this value. default ' '
+separation: ^
+
+# Use this variable if the data is empty. default: 'NULL'
+null: NULL

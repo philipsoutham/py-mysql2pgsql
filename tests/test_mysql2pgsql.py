@@ -18,6 +18,10 @@ class TestFullBoat(unittest.TestCase):
 
     def test_mysql2pgsql(self):
         m = Mysql2Pgsql(self.options)
+        m.convert()
+
+    def test_mysql2pgsql_file(self):
+        m = Mysql2Pgsql(self.options)
         m._get_file = lambda f: tempfile.NamedTemporaryFile()
         m.convert()
 

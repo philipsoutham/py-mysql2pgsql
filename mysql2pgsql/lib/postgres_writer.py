@@ -1,8 +1,8 @@
 from __future__ import absolute_import
 
 import re
-from cStringIO import StringIO
 from datetime import datetime, date, timedelta
+from io import StringIO
 
 from psycopg2.extensions import QuotedString, Binary, AsIs
 
@@ -11,14 +11,16 @@ class PostgresWriter(object):
     """Base class for :py:class:`mysql2pgsql.lib.postgres_file_writer.PostgresFileWriter`
     and :py:class:`mysql2pgsql.lib.postgres_db_writer.PostgresDbWriter`.
     """
-    def __init__(self):
+
+    def __init__(self, null='NULL'):
         self.column_types = {}
+        self.null = null
 
     def column_description(self, column):
         return '"%s" %s' % (column['name'], self.column_type_info(column))
 
     def column_type(self, column):
-        hash_key = hash(frozenset(column.items()))
+        hash_key = hash(frozenset(list(column.items())))
         self.column_types[hash_key] = self.column_type_info(column).split(" ")[0]
         return self.column_types[hash_key]
 
@@ -27,7 +29,7 @@ class PostgresWriter(object):
         """
         if column.get('auto_increment', None):
             return 'integer DEFAULT nextval(\'%s_%s_seq\'::regclass) NOT NULL' % (
-                   column['table_name'], column['name'])
+                column['table_name'], column['name'])
 
         null = "" if column['null'] else " NOT NULL"
 
@@ -37,7 +39,7 @@ class PostgresWriter(object):
             to refactor one day.
             """
             t = lambda v: not v == None
-            default = (' DEFAULT %s' % QuotedString(column['default']).getquoted()) if t(column['default']) else None
+            default = (' DEFAULT %s' % QuotedString(column['default']).getquoted().decode()) if t(column['default']) else None
 
             if column['type'] == 'char':
                 default = ('%s::char' % default) if t(default) else None
@@ -78,7 +80,7 @@ class PostgresWriter(object):
             elif column['type'] == 'timestamp':
                 if "CURRENT_TIMESTAMP" in column['default']:
                     default = ' DEFAULT CURRENT_TIMESTAMP'
-                if "0000-00-00 00:00" in  column['default']:
+                if "0000-00-00 00:00" in column['default']:
                     default = " DEFAULT '1970-01-01 00:00'"
                 if "0000-00-00 00:00:00" in column['default']:
                     default = " DEFAULT '1970-01-01 00:00:00'"
@@ -99,7 +101,8 @@ class PostgresWriter(object):
                 return ' DEFAULT %s' % column['default'].upper() if column['default'] else column['default'], 'varbit(%s)' % re.search(r'\((\d+)\)', column['type']).group(1)
             elif 'set(' in column['type']:
                 if default:
-                    default = ' DEFAULT ARRAY[%s]::text[]' % ','.join(QuotedString(v).getquoted() for v in re.search(r"'(.*)'", default).group(1).split(','))
+                    default = ' DEFAULT ARRAY[%s]::text[]' % ','.join(
+                        QuotedString(v).getquoted().decode() for v in re.search(r"'(.*)'", default).group(1).split(','))
                 return default, 'text[]'
             else:
                 raise Exception('unknown %s' % column['type'])
@@ -113,30 +116,38 @@ class PostgresWriter(object):
         sending to PostgreSQL via the copy command
         """
         for index, column in enumerate(table.columns):
-            hash_key = hash(frozenset(column.items()))
+            hash_key = hash(frozenset(list(column.items())))
             column_type = self.column_types[hash_key] if hash_key in self.column_types else self.column_type(column)
-            if row[index] == None and ('timestamp' not in column_type or not column['default']):
-                row[index] = '\N'
-            elif row[index] == None and column['default']:
+            row_value = row[index]
+            if row_value == None and ('timestamp' not in column_type or not column['default']):
+                row[index] = self.null
+            elif row_value == None and column['default']:
                 row[index] = '1970-01-01 00:00:00'
             elif 'bit' in column_type:
-                row[index] = bin(ord(row[index]))[2:]
-            elif isinstance(row[index], (str, unicode, basestring)):
+                row[index] = bin(ord(row_value))[2:]
+            elif isinstance(row_value, str):
                 if column_type == 'bytea':
-                    row[index] = Binary(row[index]).getquoted()[1:-8] if row[index] else row[index]
+                    row[index] = Binary(row_value).getquoted().decode()[1:-8] if row_value else row_value
                 elif 'text[' in column_type:
-                    row[index] = '{%s}' % ','.join('"%s"' % v.replace('"', r'\"') for v in row[index].split(','))
+                    row[index] = '{%s}' % ','.join('"%s"' % v.replace('"', r'\"') for v in row_value.split(','))
                 else:
-                    row[index] = row[index].replace('\\', r'\\').replace('\n', r'\n').replace('\t', r'\t').replace('\r', r'\r').replace('\0', '')
+                    row[index] = row_value \
+                        .replace('\\', r'\\') \
+                        .replace('\n', r'\n') \
+                        .replace('\t', r'\t') \
+                        .replace('\r', r'\r') \
+                        .replace('\0', '')
             elif column_type == 'boolean':
                 # We got here because you used a tinyint(1), if you didn't want a bool, don't use that type
-                row[index] = 't' if row[index] not in (None, 0) else 'f' if row[index] == 0 else row[index]
-            elif isinstance(row[index], (date, datetime)):
-                row[index] = row[index].isoformat()
-            elif isinstance(row[index], timedelta):
-                row[index] = datetime.utcfromtimestamp(row[index].total_seconds()).time().isoformat()
+                row[index] = 't' if row_value not in (None, 0) else 'f' if row_value == 0 else row_value
+            elif isinstance(row_value, (date, datetime)):
+                row[index] = row_value.isoformat()
+            elif isinstance(row_value, timedelta):
+                row[index] = datetime.utcfromtimestamp(row_value.total_seconds()).time().isoformat()
+            elif isinstance(row_value, bytes):
+                row[index] = Binary(row_value).getquoted().decode()[1:-8]
             else:
-                row[index] = AsIs(row[index]).getquoted()
+                row[index] = AsIs(row_value).getquoted().decode()
 
     def table_attributes(self, table):
         primary_keys = []
@@ -167,8 +178,8 @@ class PostgresWriter(object):
 
         if serial_key:
             serial_key_sql = "SELECT pg_catalog.setval(pg_get_serial_sequence(%(table_name)s, %(serial_key)s), %(maxval)s, true);" % {
-                'table_name': QuotedString(table.name).getquoted(),
-                'serial_key': QuotedString(serial_key).getquoted(),
+                'table_name': QuotedString(table.name).getquoted().decode(),
+                'serial_key': QuotedString(serial_key).getquoted().decode(),
                 'maxval': maxval}
 
         return (truncate_sql, serial_key_sql)
@@ -179,10 +190,11 @@ class PostgresWriter(object):
         table_sql = []
         if serial_key:
             serial_key_seq = '%s_%s_seq' % (table.name, serial_key)
-            serial_key_sql.append('DROP SEQUENCE IF EXISTS %s CASCADE;' % serial_key_seq)
+            serial_key_sql.append('DROP SEQUENCE IF EXISTS "%s" CASCADE;' % serial_key_seq)
             serial_key_sql.append("""CREATE SEQUENCE %s INCREMENT BY 1
                                   NO MAXVALUE NO MINVALUE CACHE 1;""" % serial_key_seq)
-            serial_key_sql.append('SELECT pg_catalog.setval(%s, %s, true);' % (QuotedString(serial_key_seq).getquoted(), maxval))
+            quoted = QuotedString(serial_key_seq).getquoted().decode()
+            serial_key_sql.append('SELECT pg_catalog.setval(%s, %s, true);' % (quoted, maxval))
 
         table_sql.append('DROP TABLE IF EXISTS "%s" CASCADE;' % table.name)
         table_sql.append('CREATE TABLE "%s" (\n%s\n)\nWITHOUT OIDS;' % (table.name, columns))
@@ -192,11 +204,13 @@ class PostgresWriter(object):
         index_sql = []
         primary_index = [idx for idx in table.indexes if idx.get('primary', None)]
         if primary_index:
-            index_sql.append('ALTER TABLE "%(table_name)s" ADD CONSTRAINT "%(index_name)s_pkey" PRIMARY KEY(%(column_names)s);' % {
+            index_sql.append(
+                'ALTER TABLE "%(table_name)s" ADD CONSTRAINT "%(index_name)s_pkey" PRIMARY KEY(%(column_names)s);' % {
                     'table_name': table.name,
-                    'index_name': '%s_%s' % (table.name, '_'.join(re.sub('[\W]+', '', c) for c in primary_index[0]['columns'])),
-                    'column_names': ', '.join('%s' % col for col in primary_index[0]['columns']),
-                    })
+                    'index_name': '%s_%s' % (
+                        table.name, '_'.join(re.sub('[\W]+', '', c) for c in primary_index[0]['columns'])),
+                    'column_names': ', '.join('"%s"' % col for col in primary_index[0]['columns']),
+                })
         for index in table.indexes:
             if 'primary' in index:
                 continue
@@ -204,11 +218,11 @@ class PostgresWriter(object):
             index_name = '%s_%s' % (table.name, '_'.join(index['columns']))
             index_sql.append('DROP INDEX IF EXISTS "%s" CASCADE;' % index_name)
             index_sql.append('CREATE %(unique)sINDEX "%(index_name)s" ON "%(table_name)s" (%(column_names)s);' % {
-                    'unique': unique,
-                    'index_name': index_name,
-                    'table_name': table.name,
-                    'column_names': ', '.join('"%s"' % col for col in index['columns']),
-                    })
+                'unique': unique,
+                'index_name': index_name,
+                'table_name': table.name,
+                'column_names': ', '.join('"%s"' % col for col in index['columns']),
+            })
 
         return index_sql
 
