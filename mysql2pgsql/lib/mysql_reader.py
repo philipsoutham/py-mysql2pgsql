@@ -60,8 +60,7 @@ class DB:
         return self.query('SHOW TABLES;')
 
     def query(self, sql, args=(), one=False, large=False):
-        return self.query_one(sql, args) if one\
-            else self.query_many(sql, args, large)
+        return self.query_one(sql, args) if one else self.query_many(sql, args, large)
 
     def query_one(self, sql, args):
         with closing(self.cursor()) as cur:
@@ -76,7 +75,6 @@ class DB:
 
 
 class MysqlReader(object):
-
     class Table(object):
         def __init__(self, reader, name):
             self.reader = reader
@@ -92,7 +90,7 @@ class MysqlReader(object):
                 return 'varchar'
             elif 'char' in data_type:
                 return 'char'
-            elif data_type in ('bit(1)', 'tinyint(1)', 'tinyint(1) unsigned'):
+            elif data_type in ('bit(1)'):
                 return 'boolean'
             elif re.search(r'smallint.* unsigned', data_type) or 'mediumint' in data_type:
                 return 'integer'
@@ -102,8 +100,7 @@ class MysqlReader(object):
                 return 'tinyint'
             elif 'bigint' in data_type and 'unsigned' in data_type:
                 return 'numeric'
-            elif re.search(r'int.* unsigned', data_type) or\
-                    ('bigint' in data_type and 'unsigned' not in data_type):
+            elif re.search(r'int.* unsigned', data_type) or ('bigint' in data_type and 'unsigned' not in data_type):
                 return 'bigint'
             elif 'int' in data_type:
                 return 'integer'
@@ -133,7 +130,7 @@ class MysqlReader(object):
                     'primary_key': res[3] == 'PRI',
                     'auto_increment': res[5] == 'auto_increment',
                     'default': res[4] if not res[4] == 'NULL' else None,
-                    }
+                }
                 fields.append(desc)
 
             for field in (f for f in fields if f['auto_increment']):
@@ -166,7 +163,8 @@ class MysqlReader(object):
                 match_data = re_key_3.search(line)
                 if match_data:
                     index['primary'] = True
-                    index['columns'] = [re.sub(r'\(\d+\)', '', col.replace('`', '')) for col in match_data.group(1).split(',')]
+                    index['columns'] = [re.sub(r'\(\d+\)', '', col.replace('`', '')) for col in
+                                        match_data.group(1).split(',')]
                     self._indexes.append(index)
                     continue
 
@@ -190,7 +188,7 @@ class MysqlReader(object):
         def query_for(self):
             return 'SELECT %(column_names)s FROM `%(table_name)s`' % {
                 'table_name': self.name,
-                'column_names': ', '. join(('`%s`' % c['name']) for c in self.columns)}
+                'column_names': ', '.join(('`%s`' % c['name']) for c in self.columns)}
 
     def __init__(self, options):
         self.db = DB(options)

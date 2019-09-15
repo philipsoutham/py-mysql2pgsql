@@ -85,7 +85,7 @@ class PostgresDbWriter(PostgresWriter):
             'database': db_options['database'],
             'password': db_options.get('password', None) or '',
             'user': db_options['username'],
-            }
+        }
         if ':' in db_options['database']:
             self.db_options['database'], self.schema = self.db_options['database'].split(':')
         else:
@@ -119,8 +119,7 @@ class PostgresDbWriter(PostgresWriter):
     def copy_from(self, file_obj, table_name, columns):
         try:
             with closing(self.conn.cursor()) as cur:
-                cur.copy_from(file=file_obj, sep=self.separation, null=self.null, table=table_name,
-                              columns=columns)
+                cur.copy_from(file=file_obj, sep=self.separation, null=self.null, table=table_name, columns=columns)
         except Exception as e:
             print(table_name, ': ', str(e), file_obj.content)
         finally:

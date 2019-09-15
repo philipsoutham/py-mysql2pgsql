@@ -39,7 +39,8 @@ class PostgresWriter(object):
             to refactor one day.
             """
             t = lambda v: not v == None
-            default = (' DEFAULT %s' % QuotedString(column['default']).getquoted().decode()) if t(column['default']) else None
+            default = (' DEFAULT %s' % QuotedString(column['default']).getquoted().decode()) if t(
+                column['default']) else None
 
             if column['type'] == 'char':
                 default = ('%s::char' % default) if t(default) else None
@@ -48,28 +49,35 @@ class PostgresWriter(object):
                 default = ('%s::character varying' % default) if t(default) else None
                 return default, 'character varying(%s)' % column['length']
             elif column['type'] == 'integer':
-                default = (" DEFAULT %s" % (column['default'] if t(column['default']) else 'NULL')) if t(default) else None
+                default = (" DEFAULT %s" % (column['default'] if t(column['default']) else 'NULL')) if t(
+                    default) else None
                 return default, 'integer'
             elif column['type'] == 'bigint':
-                default = (" DEFAULT %s" % (column['default'] if t(column['default']) else 'NULL')) if t(default) else None
+                default = (" DEFAULT %s" % (column['default'] if t(column['default']) else 'NULL')) if t(
+                    default) else None
                 return default, 'bigint'
             elif column['type'] == 'tinyint':
-                default = (" DEFAULT %s" % (column['default'] if t(column['default']) else 'NULL')) if t(default) else None
+                default = (" DEFAULT %s" % (column['default'] if t(column['default']) else 'NULL')) if t(
+                    default) else None
                 return default, 'smallint'
             elif column['type'] == 'boolean':
                 default = (" DEFAULT %s" % ('true' if int(column['default']) == 1 else 'false')) if t(default) else None
                 return default, 'boolean'
             elif column['type'] == 'float':
-                default = (" DEFAULT %s" % (column['default'] if t(column['default']) else 'NULL')) if t(default) else None
+                default = (" DEFAULT %s" % (column['default'] if t(column['default']) else 'NULL')) if t(
+                    default) else None
                 return default, 'real'
             elif column['type'] == 'float unsigned':
-                default = (" DEFAULT %s" % (column['default'] if t(column['default']) else 'NULL')) if t(default) else None
+                default = (" DEFAULT %s" % (column['default'] if t(column['default']) else 'NULL')) if t(
+                    default) else None
                 return default, 'real'
             elif column['type'] in ('numeric', 'decimal'):
-                default = (" DEFAULT %s" % (column['default'] if t(column['default']) else 'NULL')) if t(default) else None
+                default = (" DEFAULT %s" % (column['default'] if t(column['default']) else 'NULL')) if t(
+                    default) else None
                 return default, 'numeric(%s, %s)' % (column['length'] or 20, column['decimals'] or 0)
             elif column['type'] == 'double precision':
-                default = (" DEFAULT %s" % (column['default'] if t(column['default']) else 'NULL')) if t(default) else None
+                default = (" DEFAULT %s" % (column['default'] if t(column['default']) else 'NULL')) if t(
+                    default) else None
                 return default, 'double precision'
             elif column['type'] == 'datetime':
                 default = None
@@ -98,7 +106,8 @@ class PostgresWriter(object):
                 max_enum_size = max([(len(e) - 2) for e in enum.split(',')])
                 return default, ' character varying(%s) check(%s in (%s))' % (max_enum_size, column['name'], enum)
             elif 'bit(' in column['type']:
-                return ' DEFAULT %s' % column['default'].upper() if column['default'] else column['default'], 'varbit(%s)' % re.search(r'\((\d+)\)', column['type']).group(1)
+                return ' DEFAULT %s' % column['default'].upper() if column['default'] else column[
+                    'default'], 'varbit(%s)' % re.search(r'\((\d+)\)', column['type']).group(1)
             elif 'set(' in column['type']:
                 if default:
                     default = ' DEFAULT ARRAY[%s]::text[]' % ','.join(
