@@ -1,21 +1,20 @@
 from __future__ import with_statement, absolute_import
 
-import os.path
-
-from yaml import load
+import os.path, yaml
 
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
 except ImportError:
     from yaml import Loader, Dumper
 
-from .errors import ConfigurationFileInitialized,\
+from .errors import ConfigurationFileInitialized, \
     ConfigurationFileNotFound
 
 
 class ConfigBase(object):
     def __init__(self, config_file_path):
-        self.options = load(open(config_file_path))
+        with open(config_file_path, encoding='utf-8') as config:
+            self.options = yaml.load(config, Loader=yaml.FullLoader)
 
 
 class Config(ConfigBase):

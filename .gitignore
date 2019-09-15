@@ -17,3 +17,4 @@ mysql2pgsql.yml
 *.yaml
 docs/_build
 tests/reports
+.idea

@@ -37,7 +37,7 @@ class TestPostgresWriter(WithTables):
         trunc_stmt, reset_seq = trunc_cmds
         assert squeeze(trunc_stmt) == 'TRUNCATE "%s" CASCADE;' % self.table1.name
         if reset_seq:
-            self.assertRegexpMatches(squeeze(reset_seq),
+            self.assertRegex(squeeze(reset_seq),
                                  "^SELECT pg_catalog.setval\(pg_get_serial_sequence\('%s', 'id'\), \d+, true\);$" % self.table1.name)
 
     def test_write_table(self):
@@ -52,11 +52,11 @@ class TestPostgresWriter(WithTables):
 
         if seq_cmds:
             assert len(seq_cmds) == 3
-            self.assertRegexpMatches(squeeze(seq_cmds[0]),
+            self.assertRegex(squeeze(seq_cmds[0]),
                                      '^DROP SEQUENCE IF EXISTS %s_([^\s]+)_seq CASCADE;$' % self.table1.name)
-            self.assertRegexpMatches(squeeze(seq_cmds[1]),
+            self.assertRegex(squeeze(seq_cmds[1]),
                                      '^CREATE SEQUENCE %s_([^\s]+)_seq INCREMENT BY 1 NO MAXVALUE NO MINVALUE CACHE 1;$' % self.table1.name)
-            self.assertRegexpMatches(squeeze(seq_cmds[2]),
+            self.assertRegex(squeeze(seq_cmds[2]),
                                      "^SELECT pg_catalog.setval\('%s_([^\s]+)_seq', \d+, true\);$" % self.table1.name)
 
     def test_write_indexex(self):

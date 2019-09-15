@@ -16,8 +16,11 @@ class PostgresDbWriter(PostgresWriter):
     :Parameters:
       - `db_options`: :py:obj:`dict` containing connection specific variables
       - `verbose`: whether or not to log progress to :py:obj:`stdout`
+      - `separation`: Separator for each line of data. default ' '
+      - `null`: Use this variable if the data is empty. default: 'NULL'
 
     """
+
     class FileObjFaker(object):
         """A file-like class to support streaming
         table data directly to :py:meth:`pscopg2.copy_from`.
@@ -28,11 +31,14 @@ class PostgresDbWriter(PostgresWriter):
           - `processor`:
           - `verbose`: whether or not to log progress to :py:obj:`stdout`
         """
-        def __init__(self, table, data, processor, verbose=False):
+
+        def __init__(self, table, data, processor, verbose=False, separation=' '):
             self.data = iter(data)
             self.table = table
             self.processor = processor
             self.verbose = verbose
+            self.separation = separation
+            self.content = ''
 
             if verbose:
                 self.idx = 1
@@ -42,17 +48,15 @@ class PostgresDbWriter(PostgresWriter):
 
         def readline(self, *args, **kwargs):
             try:
-                row = list(self.data.next())
+                row = list(next(self.data))
             except StopIteration:
-                if self.verbose:
-                    print('')
                 return ''
             else:
                 self.processor(self.table, row)
                 try:
-                    return '%s\n' % ('\t'.join(row))
+                    return '%s\n' % (self.separation.join(row))
                 except UnicodeDecodeError:
-                    return '%s\n' % ('\t'.join(r.decode('utf8') for r in row))
+                    return '%s\n' % (self.separation.join(r.decode('utf8') for r in row))
             finally:
                 if self.verbose:
                     if (self.idx % 20000) == 0:
@@ -66,18 +70,22 @@ class PostgresDbWriter(PostgresWriter):
                     self.idx += 1
 
         def read(self, *args, **kwargs):
-            return self.readline(*args, **kwargs)
+            line = self.readline(*args, **kwargs)
+            self.content = line
+            return line
 
-    def __init__(self, db_options, verbose=False):
-        super(PostgresDbWriter, self).__init__()
+    def __init__(self, db_options, verbose=False, separation=' ', null='NULL'):
+        super(PostgresDbWriter, self).__init__(null)
         self.verbose = verbose
+        self.separation = separation
+
         self.db_options = {
             'host': db_options['hostname'],
             'port': db_options.get('port', 5432),
             'database': db_options['database'],
             'password': db_options.get('password', None) or '',
             'user': db_options['username'],
-            }
+        }
         if ':' in db_options['database']:
             self.db_options['database'], self.schema = self.db_options['database'].split(':')
         else:
@@ -109,20 +117,20 @@ class PostgresDbWriter(PostgresWriter):
             self.conn.commit()
 
     def copy_from(self, file_obj, table_name, columns):
-        with closing(self.conn.cursor()) as cur:
-            cur.copy_from(file_obj,
-                          table=table_name,
-                          columns=columns
-                          )
-
-        self.conn.commit()
+        try:
+            with closing(self.conn.cursor()) as cur:
+                cur.copy_from(file=file_obj, sep=self.separation, null=self.null, table=table_name, columns=columns)
+        except Exception as e:
+            print(table_name, ': ', str(e), file_obj.content)
+        finally:
+            self.conn.commit()
 
     def close(self):
         """Closes connection to the PostgreSQL server"""
         self.conn.close()
 
     def exists(self, relname):
-        rc = self.query('SELECT COUNT(!) FROM pg_class WHERE relname = %s', (relname, ), one=True)
+        rc = self.query('SELECT COUNT(!) FROM pg_class WHERE relname = %s', (relname,), one=True)
         return rc and int(rc[0]) == 1
 
     @status_logger
@@ -188,5 +196,5 @@ class PostgresDbWriter(PostgresWriter):
 
         Returns None
         """
-        f = self.FileObjFaker(table, reader.read(table), self.process_row, self.verbose)
+        f = self.FileObjFaker(table, reader.read(table), self.process_row, self.verbose, self.separation)
         self.copy_from(f, '"%s"' % table.name, ['"%s"' % c['name'] for c in table.columns])

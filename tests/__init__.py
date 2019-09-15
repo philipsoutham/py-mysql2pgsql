@@ -15,7 +15,7 @@ class WithReader(unittest.TestCase):
             self.config_file = os.path.join(os.path.dirname(__file__), 'mysql2pgsql-test.yml')
             self.config = Config(self.config_file, False)
         except ConfigurationFileNotFound:
-            print("In order to run this test you must create the file %s" % config)
+            print(("In order to run this test you must create the file %s" % self.config))
             sys.exit(-1)
 
         self.reader = MysqlReader(self.config.options['mysql'])
