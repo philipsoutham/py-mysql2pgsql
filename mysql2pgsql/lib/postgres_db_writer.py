@@ -72,12 +72,14 @@ class PostgresDbWriter(PostgresWriter):
         super(PostgresDbWriter, self).__init__(*args, **kwargs)
         self.verbose = verbose
         self.db_options = {
-            'host': str(db_options['hostname']),
-            'port': db_options.get('port', 5432),
             'database': str(db_options['database']),
-            'password': str(db_options.get('password', None)) or '',
+            'password': str(db_options.get('password', None) or ''),
             'user': str(db_options['username']),
             }
+        if db_options.get('hostname'):
+            self.db_options['host'] = db_options.get('hostname')
+            self.db_options['port'] = db_options.get('port', 5432)
+
         if ':' in str(db_options['database']):
             self.db_options['database'], self.schema = self.db_options['database'].split(':')
         else:
@@ -151,7 +153,8 @@ class PostgresDbWriter(PostgresWriter):
         """
         table_sql, serial_key_sql = super(PostgresDbWriter, self).write_table(table)
         for sql in serial_key_sql + table_sql:
-            self.execute(sql)
+            if sql != "":
+                self.execute(sql)
 
     @status_logger
     def write_indexes(self, table):
