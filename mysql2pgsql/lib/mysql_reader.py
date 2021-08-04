@@ -10,6 +10,16 @@ import MySQLdb.cursors
 re_column_length = re.compile(r'\((\d+)\)')
 re_column_precision = re.compile(r'\((\d+),(\d+)\)')
 re_key_1 = re.compile(r'CONSTRAINT `(\w+)` FOREIGN KEY \(`(\w+)`\) REFERENCES `(\w+)` \(`(\w+)`\)')
+# NB: according to the MySQL docs (5.5):
+# SET DEFAULT: This action is recognized by the parser, but InnoDB rejects
+# table definitions containing ON DELETE SET DEFAULT or ON UPDATE
+# SET DEFAULT clauses.
+# Thus not searching for it. RESTRICT is the default behaviour and
+# SHOW CREATE TABLE will _not_ output it (even when explicitly defined before).
+# RESTRICT is assumed as default for Postgres if nothing is defined
+# according to SHOW CREATE TABLE info.
+re_key_1_on_delete = re.compile(r'ON DELETE (NO ACTION|CASCADE|SET NULL)')
+re_key_1_on_update = re.compile(r'ON UPDATE (NO ACTION|CASCADE|SET NULL)')
 re_key_2 = re.compile(r'KEY `(\w+)` \((.*)\)')
 re_key_3 = re.compile(r'PRIMARY KEY +\((.*)\)')
 
@@ -176,6 +186,13 @@ class MysqlReader(object):
                     index['column'] = match_data.group(2)
                     index['ref_table'] = match_data.group(3)
                     index['ref_column'] = match_data.group(4)
+                    # NB: MySQL handles not defining a referential action,
+                    # NO ACTION and RESTRICT all like RESTRICT. That's why i
+                    # chose RESTRICT as default for the translation to Postgres.
+                    ondel_match = re_key_1_on_delete.search(line)
+                    index['on_delete'] = ondel_match.group(1) if ondel_match else 'RESTRICT'
+                    onupd_match = re_key_1_on_update.search(line)
+                    index['on_update'] = onupd_match.group(1) if onupd_match else 'RESTRICT'
                     self._foreign_keys.append(index)
                     continue
                 match_data = re_key_2.search(line)
