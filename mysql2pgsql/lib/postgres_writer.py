@@ -165,7 +165,7 @@ class PostgresWriter(object):
                 row[index] = bin(ord(row[index]))[2:]
             elif isinstance(row[index], (str, unicode, basestring)):
                 if column_type == 'bytea':
-                    row[index] = Binary(row[index]).getquoted()[1:-8] if row[index] else row[index]
+                    row[index] = Binary(row[index]).getquoted()[1:-8].replace("''","'") if row[index] else row[index]
                 elif 'text[' in column_type:
                     row[index] = '{%s}' % ','.join('"%s"' % v.replace('"', r'\"') for v in row[index].split(','))
                 else:
