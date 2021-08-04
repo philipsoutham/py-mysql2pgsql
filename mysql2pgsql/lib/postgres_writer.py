@@ -164,7 +164,9 @@ class PostgresWriter(object):
             elif 'bit' in column_type:
                 row[index] = bin(ord(row[index]))[2:]
             elif isinstance(row[index], (str, unicode, basestring)):
-                if column_type == 'bytea':
+                if column_type == 'boolean':
+                    row[index] = 't' if row[index] == '\x01' else 'f' if row[index] == '\x00' else row[index]
+                elif column_type == 'bytea':
                     row[index] = Binary(row[index]).getquoted()[1:-8] if row[index] else row[index]
                 elif 'text[' in column_type:
                     row[index] = '{%s}' % ','.join('"%s"' % v.replace('"', r'\"') for v in row[index].split(','))
